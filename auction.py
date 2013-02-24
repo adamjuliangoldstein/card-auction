@@ -1,8 +1,12 @@
 #!/usr/bin/env python2.7
 
 import random
+import numpy
 
-# TODO add to github
+# TODO separate these into different files
+# TODO add a "silent auction" version
+# TODO add tests
+# TODO remove prints/improve logging so it can be turned off
 
 class Table:
     def __init__(self):
@@ -127,6 +131,9 @@ class Deck:
         else:
             random.shuffle(self.cards)
             return self.cards.pop()
+    
+    def expected_value(self):
+        return numpy.mean(self.cards)
 
 class Player:
     def __init__(self, name):
@@ -148,6 +155,8 @@ class Player:
     def __repr__(self):
         return "{}:{}".format(self.__class__.__name__, self.name)
     
+    # Get my desired play via _play(), then do housekeeping
+    # returning None means passing
     def play(self, table):
         # If we've already passed the current hand, keep passing
         if self.passed_current_hand:
@@ -168,15 +177,11 @@ class Player:
             self.plays.append(res)
             return sum(self.plays)
     
-    # Prompt the player to play a card
-    # None indicates the player is passing
-    # Otherwise return the sum of the player's plays (including this hand)
+    # This is where the playing logic/AI happens; override in subclasses
+    # TODO figure out how to make play (not _play) un-overridable
     def _play(self, table):
-        # If we have no cards or we've already played a call
-        if not self.biddables or self.plays:
-            return None
-        else:
-            return self.biddables[-1]
+        print ""
+        raise
 
     # Do cleanup after the hand ends
     def hand_over(self, won = None):
@@ -199,9 +204,34 @@ class Player:
                                                                           sum(self.wins),
                                                                           self.discards)
 
+# TODO make a player that prompts the human to play
+
+# Keep trying to play the highest card no matter what
+class HighBot(Player):
+    def _play(self, table):
+        if not self.biddables:
+            return None
+        else:
+            return max(self.biddables)
+
+# Pass no matter what
 class PassBot(Player):
     def _play(self, table):
         return None
+
+# Pass if any of the other players have cards left; otherwise pass only if 
+# it's the highest-EV thing to do
+class SmarterPassBot(Player):
+    def _play(self, table):
+        # If everyone else is out, bid if it's worth it
+        if all(table.other_players(self).is_out()):
+            if table.hole_card > table.deck.expected_value():
+                return min(self.biddables)
+            else:
+                return None
+        # If at least one other player has cards, pass
+        else:
+            return None
 
 def main():
     scoreboard = {}

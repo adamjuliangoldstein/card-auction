@@ -12,7 +12,7 @@ class Table:
     def __init__(self):
         self.hole_card = None
         self.deck = Deck()
-        self.players = [HighBot('Adam'), SmarterPassBot('Bob')]
+        self.players = [HighBot('Adam'), PassThenPlayBot('Bob')]
         self.next_first_player_index = 0 # Who starts the next hand
     
     def reset(self):
@@ -222,6 +222,15 @@ class PassBot(Player):
     def _play(self, table):
         return None
 
+# Pass if any of the other players have cards left; otherwise play
+class PassThenPlayBot(Player):
+    def _play(self, table):
+        # If everyone else is out, bid
+        if all(p.is_out() for p in table.other_players(self)):
+            return min(self.biddables)
+        else:
+            return None
+
 # Pass if any of the other players have cards left; otherwise pass only if 
 # it's the highest-EV thing to do
 class SmarterPassBot(Player):
@@ -244,7 +253,7 @@ def main():
     for p in players:
         if not scoreboard.has_key(p):
             scoreboard[p] = 0
-    n = 1
+    n = 100
     for i in range(n):
         table.reset()
         winners = table.run_game()

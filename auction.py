@@ -12,7 +12,7 @@ class Table:
     def __init__(self):
         self.hole_card = None
         self.deck = Deck()
-        self.players = [PassBot('Adam'), PassBot('Bob')]
+        self.players = [HighBot('Adam'), SmarterPassBot('Bob')]
         self.next_first_player_index = 0 # Who starts the next hand
     
     def reset(self):
@@ -62,7 +62,7 @@ class Table:
     def run_hand(self):
         self.hole_card = self.deck.show_top_card()
         if not self.hole_card:
-            print "The game is over because the deck is empty"
+            print "The deck is empty"
             return False
         print "A card is drawn into the hole: {}".format(self.hole_card)
         # Who starts the next bid:
@@ -133,7 +133,10 @@ class Deck:
             return self.cards.pop()
     
     def expected_value(self):
-        return numpy.mean(self.cards)
+        if self.cards:
+            return numpy.mean(self.cards)
+        else:
+            return 0
 
 class Player:
     def __init__(self, name):
@@ -224,7 +227,7 @@ class PassBot(Player):
 class SmarterPassBot(Player):
     def _play(self, table):
         # If everyone else is out, bid if it's worth it
-        if all(table.other_players(self).is_out()):
+        if all(p.is_out() for p in table.other_players(self)):
             if table.hole_card > table.deck.expected_value():
                 return min(self.biddables)
             else:
@@ -233,6 +236,7 @@ class SmarterPassBot(Player):
         else:
             return None
 
+# TODO break out the running of one game from the running of N
 def main():
     scoreboard = {}
     table = Table()
@@ -240,7 +244,8 @@ def main():
     for p in players:
         if not scoreboard.has_key(p):
             scoreboard[p] = 0
-    for i in range(1000):
+    n = 1
+    for i in range(n):
         table.reset()
         winners = table.run_game()
         for w in winners:

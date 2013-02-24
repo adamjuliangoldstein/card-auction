@@ -8,7 +8,7 @@ class Table:
     def __init__(self):
         self.hole_card = None
         self.deck = Deck()
-        self.players = [PassPlayer('Adam'), PassPlayer('Bob')]
+        self.players = [PassBot('Adam'), PassBot('Bob')]
         self.next_first_player_index = 0 # Who starts the next hand
     
     def reset(self):
@@ -199,7 +199,7 @@ class Player:
                                                                           sum(self.wins),
                                                                           self.discards)
 
-class PassPlayer(Player):
+class PassBot(Player):
     def _play(self, table):
         return None
 

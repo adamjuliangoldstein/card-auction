@@ -12,7 +12,7 @@ class Table:
     def __init__(self):
         self.hole_card = None
         self.deck = Deck()
-        self.players = [HighBot('Adam'), PassThenPlayBot('Bob')]
+        self.players = [HumanPlayer('Adam'), PassThenPlayBot('Bob')]
         self.next_first_player_index = 0 # Who starts the next hand
     
     def reset(self):
@@ -113,6 +113,9 @@ class Table:
         return winners
         
     def verify_play(self, player, bid_to_verify):
+        # If the player doesn't have the given card
+        if bid_to_verify not in player.biddables:
+            return False
         current_totals = {}
         for p in self.players:
             current_totals[p] = sum(p.plays)
@@ -208,6 +211,21 @@ class Player:
                                                                           self.discards)
 
 # TODO make a player that prompts the human to play
+
+class HumanPlayer(Player):
+    def _play(self, table):
+        for p in table.other_players(self):
+            print "{} has played {} = {}".format(p, p.plays, sum(p.plays))
+            print "{} has biddables {}".format(p, p.biddables)
+        print "You have played {} = {}".format(self.plays, sum(self.plays))
+        print "You currently have biddables: {}".format(self.biddables)
+        c = raw_input('Enter a card (or 0 to pass): ')
+        n = int(c)
+        if n == 0:
+            # Pass
+            return None
+        else:
+            return n
 
 # Keep trying to play the highest card no matter what
 class HighBot(Player):

@@ -12,7 +12,7 @@ class Table:
     def __init__(self):
         self.hole_card = None
         self.deck = Deck()
-        self.players = [HumanPlayer('Adam'), PassThenPlayBot('Bob')]
+        self.players = [HumanPlayer('Adam'), SmartBot('Bob')]
         self.next_first_player_index = 0 # Who starts the next hand
     
     def reset(self):
@@ -64,7 +64,7 @@ class Table:
         if not self.hole_card:
             print "The deck is empty"
             return False
-        print "A card is drawn into the hole: {}".format(self.hole_card)
+        print "\nA card is drawn into the hole: {}".format(self.hole_card)
         # Who starts the next bid:
         player = None
         winner = None
@@ -122,6 +122,9 @@ class Table:
         top_score = max(current_totals.values())
         # Verify that playing this bid for player will make them the top total
         return current_totals[player] + bid_to_verify > top_score
+    
+    def all_others_out(self, player):
+        return all(p.is_out() for p in self.other_players(player))
 
 class Deck:
     def __init__(self):
@@ -174,7 +177,7 @@ class Player:
             return None
         # If we're bidding, but our bid is not valid
         elif not table.verify_play(self, res):
-            print "INVALID PLAY"
+            print "INVALID PLAY: {}".format(res)
             self.passed_current_hand = True
             return None
         # If we're bidding, and our bid is valid
@@ -244,7 +247,7 @@ class PassBot(Player):
 class PassThenPlayBot(Player):
     def _play(self, table):
         # If everyone else is out, bid
-        if all(p.is_out() for p in table.other_players(self)):
+        if table.all_others_out(self):
             return min(self.biddables)
         else:
             return None
@@ -254,7 +257,7 @@ class PassThenPlayBot(Player):
 class SmarterPassBot(Player):
     def _play(self, table):
         # If everyone else is out, bid if it's worth it
-        if all(p.is_out() for p in table.other_players(self)):
+        if table.all_others_out(self):
             if table.hole_card > table.deck.expected_value():
                 return min(self.biddables)
             else:
@@ -263,15 +266,43 @@ class SmarterPassBot(Player):
         else:
             return None
 
+# If nobody else has any cards, play if it's the highest-EV thing to do
+# Never play more than one card per hand
+# Otherwise, play the chosen card
+class SmartBot(Player):
+    def _play(self, table):
+        # If everyone else is out, bid if it's the highest-EV thing to do
+        if table.all_others_out(self):
+            if table.hole_card > table.deck.expected_value():
+                return min(self.biddables)
+            else:
+                return None
+        # If I've already played a card, pass
+        elif self.plays:
+            return None
+        # Try to play the highest card less than the hole card:
+        else:
+            return self._chosen_card(table)
+    
+    # TODO: Make table a field on Player so it doesn't have to be passed around
+    def _chosen_card(self, table):
+        lesser_cards = filter(lambda c: c < table.hole_card, self.biddables)
+        if not lesser_cards:
+            return None
+        else:
+            return max(lesser_cards)
+
 # TODO break out the running of one game from the running of N
 def main():
+    # Initialize the table and players
     scoreboard = {}
     table = Table()
     players = table.players
     for p in players:
         if not scoreboard.has_key(p):
             scoreboard[p] = 0
-    n = 100
+    # Run the games
+    n = 1
     for i in range(n):
         table.reset()
         winners = table.run_game()

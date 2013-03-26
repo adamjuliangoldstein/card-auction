@@ -3,16 +3,22 @@
 import random
 import numpy
 
+LOGGING_ON = False
+
 # TODO separate these into different files
 # TODO add a "silent auction" version
 # TODO add tests
-# TODO remove prints/improve logging so it can be turned off
+# TODO replace log() with a standard Python logging method
+
+def log(s):
+    if LOGGING_ON:
+        print s
 
 class Table:
     def __init__(self):
         self.hole_card = None
         self.deck = Deck()
-        self.players = [CheapBot('Adam'), CheapBot('Bob')]
+        self.players = [CheapBot('Adam'), VeryCheapBot('Bob')]
         self.next_first_player_index = 0 # Who starts the next hand
     
     def reset(self):
@@ -50,8 +56,8 @@ class Table:
                 p.hand_over(self.hole_card)
             else:
                 p.hand_over()
-        print "The hand is over and {} wins {}".format(winner.name,
-                                                       self.hole_card)
+        log("The hand is over and {} wins {}".format(winner.name,
+                                                       self.hole_card))
 
     def check_over(self):
         last_man_standing = None
@@ -69,14 +75,14 @@ class Table:
     def run_hand(self):
         self.hole_card = self.deck.show_top_card()
         if not self.hole_card:
-            print "The deck is empty"
+            log("The deck is empty")
             return False
-        print "\nA card is drawn into the hole: {}".format(self.hole_card)
+        log("\nA card is drawn into the hole: {}".format(self.hole_card))
         # Who starts the next bid:
         player = None
         winner = None
         passes = 0
-        print "The hand begins"
+        log("The hand begins")
         while True:
             last_player = player
             player = self._next_player(player)
@@ -87,9 +93,9 @@ class Table:
             # Otherwise
             bids = player.play(self)
             if not bids:
-                print "{} passes".format(player.name)
+                log("{} passes".format(player.name))
             else:
-                print "{} plays {}".format(player.name, bids)
+                log("{} plays {}".format(player.name, bids))
             winner = self.check_over()
             # If the hand is over
             if winner:
@@ -106,10 +112,10 @@ class Table:
         while True:
             game_continues = self.run_hand()
             for player in self.players:
-                player.print_desc()
+                player.log_desc()
             if not game_continues:
                 break            
-        print "Game over"
+        log("Game over")
         return self.winners()
     
     # Possible for there to be multiple winners if there's a tie
@@ -194,7 +200,7 @@ class Player:
             return None
         # If we're bidding, but our bid is not valid
         elif not table.verify_play(self, res):
-            print "INVALID PLAY: {}".format(res)
+            log("INVALID PLAY: {}".format(res))
             self.passed_current_hand = True
             return None
         # If we're bidding, and our bid is valid
@@ -222,22 +228,22 @@ class Player:
     def is_out(self):
         return len(self.biddables) == 0
     
-    def print_desc(self):
-        print "{} has biddables: {}\n   wins: {}, {}\n   discards: {}".format(self.name,
+    def log_desc(self):
+        log("{} has biddables: {}\n   wins: {}, {}\n   discards: {}".format(self.name,
                                                                           self.biddables,
                                                                           self.wins,
                                                                           sum(self.wins),
-                                                                          self.discards)
+                                                                          self.discards))
 
 # TODO make a player that prompts the human to play
 
 class HumanPlayer(Player):
     def _play(self, table):
         for p in table.other_players(self):
-            print "{} has played {} = {}".format(p, p.plays, sum(p.plays))
-            print "{} has biddables {}".format(p, p.biddables)
-        print "You have played {} = {}".format(self.plays, sum(self.plays))
-        print "You currently have biddables: {}".format(self.biddables)
+            log("{} has played {} = {}".format(p, p.plays, sum(p.plays)))
+            log("{} has biddables {}".format(p, p.biddables))
+        log("You have played {} = {}".format(self.plays, sum(self.plays)))
+        log("You currently have biddables: {}".format(self.biddables))
         c = raw_input('Enter a card (or 0 to pass): ')
         n = int(c)
         if n == 0:
@@ -312,6 +318,10 @@ class CheapBot(SmartBot):
         else:
             return max(lesser_cards)
 
+class VeryCheapBot(SmartBot):
+    def _chosen_card(self, table):
+        return min(self.biddables)
+
 # TODO break out the running of one game from the running of N
 def main():
     # Initialize the table and players
@@ -328,7 +338,7 @@ def main():
         winners = table.run_game()
         for w in winners:
             scoreboard[w] = scoreboard[w] + (1.0/len(winners))
-        print "Winner(s): {}".format([p.name for p in winners])
+        log("Winner(s): {}".format([p.name for p in winners]))
     print "Final score: {}".format(scoreboard)
 
 if __name__ == '__main__':

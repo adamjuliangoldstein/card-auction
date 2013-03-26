@@ -31,11 +31,18 @@ class Table:
     
     def _next_player(self, player):
         if not player: # If we're selecting the first player of the hand
-            return self.players[self.next_first_player_index]
+            candidate_index = self.next_first_player_index
         else: 
             candidate_index = self.players.index(player)
             candidate_index = (candidate_index + 1) % len(self.players)
-            return self.players[candidate_index]
+        num_tries = 0
+        # Keep going until we find a player who isn't out:
+        while self.players[candidate_index].is_out():
+            if num_tries > len(self.players):
+                break
+            candidate_index = (candidate_index + 1) % len(self.players)
+            num_tries += 1
+        return self.players[candidate_index]
 
     def assign_winner(self, winner):
         for p in self.players:
@@ -71,7 +78,13 @@ class Table:
         passes = 0
         print "The hand begins"
         while True:
+            last_player = player
             player = self._next_player(player)
+            # If we've gone all the way around and ended on the same player
+            if player == last_player:
+                self.assign_winner(player)
+                break
+            # Otherwise
             bids = player.play(self)
             if not bids:
                 print "{} passes".format(player.name)

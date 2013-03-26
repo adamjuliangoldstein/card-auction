@@ -170,6 +170,10 @@ class Player:
         # If we've already passed the current hand, keep passing
         if self.passed_current_hand:
             return None
+        # If we're already out of cards, pass:
+        if self.is_out():            
+            self.passed_current_hand = True
+            return None
         res = self._play(table)
         # If we're passing
         if not res:
@@ -189,7 +193,6 @@ class Player:
     # This is where the playing logic/AI happens; override in subclasses
     # TODO figure out how to make play (not _play) un-overridable
     def _play(self, table):
-        print ""
         raise
 
     # Do cleanup after the hand ends
@@ -233,7 +236,7 @@ class HumanPlayer(Player):
 # Keep trying to play the highest card no matter what
 class HighBot(Player):
     def _play(self, table):
-        if not self.biddables:
+        if self.is_out():
             return None
         else:
             return max(self.biddables)

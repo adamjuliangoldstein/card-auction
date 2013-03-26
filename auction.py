@@ -12,7 +12,7 @@ class Table:
     def __init__(self):
         self.hole_card = None
         self.deck = Deck()
-        self.players = [HumanPlayer('Adam'), SmartBot('Bob')]
+        self.players = [CheapBot('Adam'), CheapBot('Bob')]
         self.next_first_player_index = 0 # Who starts the next hand
     
     def reset(self):
@@ -302,6 +302,10 @@ class SmartBot(Player):
     
     # TODO: Make table a field on Player so it doesn't have to be passed around
     def _chosen_card(self, table):
+        raise
+
+class CheapBot(SmartBot):
+    def _chosen_card(self, table):
         lesser_cards = filter(lambda c: c < table.hole_card, self.biddables)
         if not lesser_cards:
             return None
@@ -318,7 +322,7 @@ def main():
         if not scoreboard.has_key(p):
             scoreboard[p] = 0
     # Run the games
-    n = 1
+    n = 1000
     for i in range(n):
         table.reset()
         winners = table.run_game()

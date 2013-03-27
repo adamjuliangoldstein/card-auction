@@ -18,7 +18,7 @@ class Table:
     def __init__(self):
         self.hole_card = None
         self.deck = Deck()
-        self.players = [CheapBot('Adam'), VeryCheapBot('Bob')]
+        self.players = [CheapBot('Bob'), RandomBot('Adam')]
         self.next_first_player_index = 0 # Who starts the next hand
     
     def reset(self):
@@ -302,7 +302,7 @@ class SmartBot(Player):
         # If I've already played a card, pass
         elif self.plays:
             return None
-        # Try to play the highest card less than the hole card:
+        # Try to play the chosen card:
         else:
             return self._chosen_card(table)
     
@@ -310,6 +310,7 @@ class SmartBot(Player):
     def _chosen_card(self, table):
         raise
 
+# Play the highest card I have under the hole card
 class CheapBot(SmartBot):
     def _chosen_card(self, table):
         lesser_cards = filter(lambda c: c < table.hole_card, self.biddables)
@@ -318,9 +319,29 @@ class CheapBot(SmartBot):
         else:
             return max(lesser_cards)
 
+# Play the lowest card I have
 class VeryCheapBot(SmartBot):
     def _chosen_card(self, table):
         return min(self.biddables)
+
+# Play the lowest card I have above the hole card
+class PriceyBot(SmartBot):
+    def _chosen_card(self, table):
+        more_cards = filter(lambda c: c > table.hole_card, self.biddables)
+        if not more_cards:
+            return None
+        else:
+            return min(more_cards)
+
+# Play the highest card I have
+class VeryPriceyBot(SmartBot):
+    def _chosen_card(self, table):
+        return max(self.biddables)
+
+# Play a random card
+class RandomBot(SmartBot):
+    def _chosen_card(self, table):
+        return random.choice(self.biddables)
 
 # TODO break out the running of one game from the running of N
 def main():
@@ -332,7 +353,7 @@ def main():
         if not scoreboard.has_key(p):
             scoreboard[p] = 0
     # Run the games
-    n = 1000
+    n = 10000
     for i in range(n):
         table.reset()
         winners = table.run_game()
